@@ -1,0 +1,8 @@
+Import('env')
+
+local = env.Clone()
+
+local.Append(CPPPATH=['include/'])
+local.Append(LIBS = ['ev'])
+
+local.Program(target='bin/quick', source=['src/quick.cpp'])
