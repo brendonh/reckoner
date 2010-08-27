@@ -1,4 +1,8 @@
+INSTALL_DIR = 'bin'
+
 env = Environment()
 Export('env')
 
-SConscript(['common/SConscript'])
+bits = SConscript(['server/SConscript', 'client/SConscript'])
+
+inst = env.Install(INSTALL_DIR, bits)

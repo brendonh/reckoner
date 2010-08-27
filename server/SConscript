@@ -1,0 +1,14 @@
+Import('env')
+
+local = env.Clone()
+
+local.Append(CPPPATH=['include/'])
+local.Append(LIBPATH=['lib/'])
+local.Append(LIBS=['enet'])
+
+final = local.Program(target='bin/server', 
+                      source=['src/server.cpp', 
+                              'src/client.cpp',
+                              'src/clientlist.cpp'])
+
+Return('final')
