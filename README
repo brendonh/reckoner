@@ -1,1 +1,10 @@
 Simulation / networking layer for Microcosm
+
+
+BUILDING
+========
+
+mkdir build
+cd build
+cmake ../client
+make
