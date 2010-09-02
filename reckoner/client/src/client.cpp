@@ -3,24 +3,26 @@
 #include <string.h>
 #include <signal.h>
 
+#include "reckoner_misc.hpp"
+
 bool running = true;
 bool _shutdown = false;
 ENetPeer* server;
 
 
-void forceShutdown(int param) {
+void forceShutdown(int UNUSED(param)) {
   printf("\rForcing shutdown...\n");
   running = false;
 }
 
-void startShutdown(int param) {
+void startShutdown(int UNUSED(param)) {
   printf("\rShutting down...\n");
   _shutdown = true;
   signal(SIGINT, forceShutdown);
 }
 
 
-int main (int argc, char ** argv) {
+int main () {
 
   signal(SIGINT, startShutdown);
 
@@ -110,6 +112,8 @@ int main (int argc, char ** argv) {
       running = false;
 
       break;
+
+    default: break;
     }
   }
 

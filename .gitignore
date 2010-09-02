@@ -1,3 +1,1 @@
-.scons*
-*.o
-common/bin/*
+build/*

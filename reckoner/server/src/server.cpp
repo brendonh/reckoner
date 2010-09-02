@@ -3,13 +3,15 @@
 #include <string>
 #include <signal.h>
 
+#include "reckoner_misc.hpp"
+
 #include "clientlist.hpp"
 
 using namespace Reckoner;
 
 bool _shutdown = false;
 
-void startShutdown(int param) {
+void startShutdown(int UNUSED(param)) {
   printf("\rShutting down...\n");
   _shutdown = true;
 }
@@ -32,7 +34,7 @@ ENetHost* startServer() {
   return server;
 }
 
-int main (int argc, char ** argv) {
+int main () {
   signal (SIGINT, startShutdown);
 
   ENetHost* server = startServer();
@@ -49,7 +51,7 @@ int main (int argc, char ** argv) {
 
   while (!_shutdown) {
 
-    int rv = enet_host_service(server, &event, 1000);
+    int rv = enet_host_service(server, &event, -1);
 
     if (rv == 0) continue;
 
@@ -83,7 +85,11 @@ int main (int argc, char ** argv) {
         clientList->removeClient(client);
       }
       event.peer -> data = NULL;
+      break;
+
+    default: break;
     }
+
   }
 
   ClientMap clients = clientList->clients;
