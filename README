@@ -4,7 +4,9 @@ Simulation / networking layer for Microcosm
 BUILDING
 ========
 
+To "install" into build/dist:
+
 mkdir build
 cd build
 cmake ../client
-make
+make install

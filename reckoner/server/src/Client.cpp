@@ -1,4 +1,4 @@
-#include "client.hpp"
+#include "Client.hpp"
 
 Reckoner::Client::Client(ClientID id, ENetPeer* p) : clientID(id), peer(p) {
   log("Connected");

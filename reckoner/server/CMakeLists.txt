@@ -11,10 +11,12 @@ set(LIBS ${LIBS} enet)
 
 
 file(GLOB ReckonerServer_SOURCES "${ReckonerServer_SOURCE_DIR}/src/*.cpp")
-include_directories(ReckonerServer "${ReckonerServer_SOURCE_DIR}/include" "${RECKONER_COMMON_DIR}/include")
+include_directories("${RECKONER_COMMON_DIR}/src")
 
 add_definitions(-Wall -Wextra -pedantic -Werror)
 
+add_executable("reckoner-server" ${ReckonerServer_SOURCES})
+target_link_libraries("reckoner-server" ${LIBS})
 
-add_executable(server ${ReckonerServer_SOURCES})
-target_link_libraries(server ${LIBS})
+install(TARGETS "reckoner-server" RUNTIME DESTINATION "bin")
+copy_headers("${ReckonerServer_SOURCE_DIR}/src/" "reckoner/server")

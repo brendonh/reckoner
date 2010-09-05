@@ -9,8 +9,8 @@
 #include <map>
 #include <limits>
 
-#include "reckoner.hpp"
-#include "client.hpp"
+#include "Server.hpp"
+#include "Client.hpp"
 
 
 namespace Reckoner {

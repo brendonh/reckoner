@@ -3,9 +3,10 @@
 #include <string>
 #include <signal.h>
 
-#include "reckoner_misc.hpp"
+#include "Reckoner.hpp"
+#include "Server.hpp"
 
-#include "clientlist.hpp"
+#include "ClientList.hpp"
 
 using namespace Reckoner;
 

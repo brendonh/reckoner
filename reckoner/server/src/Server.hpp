@@ -1,5 +1,5 @@
-#ifndef __RECKONER_RECKONER
-#define __RECKONER_RECKONER
+#ifndef __RECKONER_SERVER
+#define __RECKONER_SERVER
 
 namespace Reckoner {
   typedef unsigned long ClientID;

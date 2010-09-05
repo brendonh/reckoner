@@ -7,6 +7,12 @@ set(CMAKE_MODULE_PATH ${Reckoner_SOURCE_DIR}/../cmake/modules ${CMAKE_MODULE_PAT
 include(MacroOutOfSourceBuild)
 macro_ensure_out_of_source_build("${PROJECT_NAME} requires an out of source build.")
 
+include(CopyHeaders)
 
+set(CMAKE_INSTALL_PREFIX "dist/")
+
+subdirs(common)
 subdirs(server)
 subdirs(client)
+
+

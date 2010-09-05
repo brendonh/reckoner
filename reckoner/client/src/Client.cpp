@@ -3,7 +3,7 @@
 #include <string.h>
 #include <signal.h>
 
-#include "reckoner_misc.hpp"
+#include "Reckoner.hpp"
 
 bool running = true;
 bool _shutdown = false;
