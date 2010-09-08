@@ -11,8 +11,9 @@ include(CopyHeaders)
 
 set(CMAKE_INSTALL_PREFIX "dist/")
 
-subdirs(common)
-subdirs(server)
-subdirs(client)
+
+add_subdirectory(common)
+add_subdirectory(server)
+add_subdirectory(client)
 
 

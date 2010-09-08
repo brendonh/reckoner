@@ -3,14 +3,21 @@
 #include <string>
 #include <signal.h>
 
+#include <iostream>
+
 #include "Reckoner.hpp"
 #include "Server.hpp"
 
 #include "ClientList.hpp"
 
+
+#include "common/proto/login.pb.h"
+
+
 using namespace Reckoner;
 
 bool _shutdown = false;
+Reckoner::ClientList* clientList;
 
 void startShutdown(int UNUSED(param)) {
   printf("\rShutting down...\n");
@@ -35,7 +42,10 @@ ENetHost* startServer() {
   return server;
 }
 
-int main () {
+int main() {
+
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
   signal (SIGINT, startShutdown);
 
   ENetHost* server = startServer();
@@ -45,7 +55,7 @@ int main () {
     return EXIT_FAILURE;
   }
 
-  Reckoner::ClientList *clientList = new ClientList();
+  clientList = new ClientList();
 
   ENetEvent event;    
   Reckoner::Client *client;
@@ -93,12 +103,12 @@ int main () {
 
   }
 
-  ClientMap clients = clientList->clients;
+  ClientMap clients = clientList->mClients;
   ClientMap::iterator it;
 
   for(it = clients.begin(); it != clients.end(); ++it) {
     client = it->second;
-    enet_peer_disconnect(client->peer, NULL);
+    enet_peer_disconnect(client->mPeer, NULL);
     clientList->removeClient(client);
   }
 

@@ -1,122 +1,108 @@
-#include <enet/enet.h>
-#include <stdio.h>
-#include <string.h>
-#include <signal.h>
+#include <iostream>
+#include <sstream>
 
-#include "Reckoner.hpp"
+#include "./Client.hpp"
 
-bool running = true;
-bool _shutdown = false;
-ENetPeer* server;
+using namespace Reckoner::Client;
 
+extern bool _shutdown;
 
-void forceShutdown(int UNUSED(param)) {
-  printf("\rForcing shutdown...\n");
-  running = false;
-}
-
-void startShutdown(int UNUSED(param)) {
-  printf("\rShutting down...\n");
-  _shutdown = true;
-  signal(SIGINT, forceShutdown);
+Connection::Connection() {
+  mDisconnecting = false;
+  mDisconnected = false;
+  mMessageBufferSize = 1024;
+  mMessageBuffer = (char*)malloc(mMessageBufferSize);
 }
 
 
-int main () {
+Connection::~Connection() {}
 
-  signal(SIGINT, startShutdown);
 
-  if (enet_initialize () != 0) {
-    fprintf (stderr, "An error occurred while initializing ENet.\n");
-    return EXIT_FAILURE;
-  }
+bool Connection::startConnect(std::string h, int p) {
+  mHost = h;
+  mPort = p;
 
-  ENetHost* client = enet_host_create(NULL, 1, 2, 0, 0);
+  std::ostringstream os;
+  os << "[" << mHost << ":" << mPort << "]";
+  mIdentifier = os.str();
 
-  if (client == NULL) {
-    fprintf (stderr, "An error occurred while trying to create an ENet client host.\n");
-    exit (EXIT_FAILURE);
+  mClient = enet_host_create(NULL, 1, 2, 0, 0);
+
+  if (mClient == NULL) {
+    LOG("Couldn't create ENet client host.");
+    return false;
   }
 
   ENetAddress address;
-  enet_address_set_host(&address, "localhost");
+  enet_address_set_host(&address, mHost.c_str());
   address.port = 8101;
 
-  ENetPeer* server = enet_host_connect(client, &address, 2, 0);
+  mPeer = enet_host_connect(mClient, &address, 2, 0);
 
-  if (server == NULL) {
-    fprintf (stderr, "Couldn't connect to server\n");
-    exit(EXIT_FAILURE);
+  if (mPeer == NULL) {
+    LOG("Couldn't connect to server");
+    return false;
   }
 
-  ENetEvent event;
-  ENetPacket* packet;
-
-  while (running) {
-
-    if (_shutdown) {
-      enet_peer_disconnect(server, NULL);
-    }
-
-    printf(".");
-    fflush(stdout);
-
-    int rv = enet_host_service(client, &event, 1000);
-
-    if (rv == 0) continue;
-
-    if (rv < 0) {
-      if (_shutdown) continue;
-      if (running) printf("Error listening for events.\n");
-      break;
-    }
-
-    printf("\n");
-
-    switch (event.type) {
-    case ENET_EVENT_TYPE_CONNECT:
-      printf ("Connected to server: %x:%u.\n", 
-              event.peer -> address.host,
-              event.peer -> address.port);
-
-      packet = enet_packet_create("packet", 
-                                  strlen("packet") + 1, 
-                                  ENET_PACKET_FLAG_RELIABLE);
-
-      enet_packet_resize(packet, strlen("packetfoo") + 1);
-      strcpy((char*)&packet->data[strlen("packet")], "foo");
-
-      enet_peer_send(event.peer, 0, packet);
-
-      event.peer->data = (char*)"Client information";
-
-      break;
-
-    case ENET_EVENT_TYPE_RECEIVE:
-      printf ("A packet of length %u containing %s was received from %s on channel %u.\n",
-              (int)event.packet->dataLength,
-              (char*)event.packet->data,
-              (char*)event.peer->data,
-              event.channelID);
-
-      enet_packet_destroy(event.packet);
-            
-      break;
-           
-    case ENET_EVENT_TYPE_DISCONNECT:
-      printf ("Disconected.\n");
-      event.peer -> data = NULL;
-
-      // Later, try reconnecting
-      //if (_shutdown) running = false;
-      running = false;
-
-      break;
-
-    default: break;
-    }
-  }
-
-  enet_host_destroy(client);
-  atexit(enet_deinitialize);
+  return true;
 }
+
+
+void Connection::service(int timeout) {
+  int rv = enet_host_service(mClient, &mEvent, timeout);
+
+  if (rv == 0) return;
+  
+  if (rv < 0) {
+    if (_shutdown) return;
+    LOG("Error listening for events.");
+    return;
+  }
+
+  switch (mEvent.type) {
+  case ENET_EVENT_TYPE_CONNECT:
+    connected();
+    break;
+
+  case ENET_EVENT_TYPE_RECEIVE:
+    // printf ("A packet of length %u containing %s was received from %s on channel %u.\n",
+    //         (int)event.packet->dataLength,
+    //         (char*)event.packet->data,
+    //         (char*)event.peer->data,
+    //         event.channelID);
+
+    enet_packet_destroy(mEvent.packet);
+            
+    break;
+           
+  case ENET_EVENT_TYPE_DISCONNECT:
+    mEvent.peer -> data = NULL;
+    disconnected();
+    break;
+
+  default: break;
+  }
+}
+
+void Connection::connected() {
+  LOG("Connected");
+
+  ProtoBufs::Login login;
+  login.set_name("Brend");
+  send(MTYPE_LOGIN, &login, ENET_PACKET_FLAG_RELIABLE);
+}
+
+
+void Connection::startDisconnect() {
+  LOG("Disconnecting...");
+  mDisconnecting = true;
+  enet_peer_disconnect(mPeer, NULL);
+}
+
+
+void Connection::disconnected() {
+  LOG("Disconnected.");
+  mDisconnected = true;
+  enet_host_destroy(mClient);
+}
+

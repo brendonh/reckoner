@@ -1,0 +1,10 @@
+package Reckoner.ProtoBufs;
+
+option optimize_for = LITE_RUNTIME;
+
+message Login {
+  required string name = 1;
+}
+
+message LoggedIn {
+}

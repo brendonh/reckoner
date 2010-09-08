@@ -2,6 +2,14 @@
 
 namespace Reckoner {
 
+  inline ClientID makeClientID(ENetAddress addr) {
+    ClientID id = (ClientID)addr.host;
+    id <<= 32;
+    id |= addr.port;
+    return id;
+  }
+
+
   ClientList::ClientList() {}
 
   ClientList::~ClientList() {}
@@ -10,14 +18,21 @@ namespace Reckoner {
     ClientID id = makeClientID(p->address);
     if (0 == id) return NULL;
     Client* client = new Client(id, p);
-    clients[id] = client;
+    mClients[id] = client;
     return client;
   }
   
   void ClientList::removeClient(Client* client) {
-    ClientID id = client->clientID;
-    clients.erase(id);
+    ClientID id = client->mClientID;
+    if (client->mUserID != "") mUsers.erase(client->mUserID);
+    mClients.erase(id);
     delete client;
+  }
+
+  Client* ClientList::clientByUser(UserID uid) {
+    UserMap::const_iterator it = mUsers.find(uid);
+    if (it == mUsers.end()) return NULL;
+    return it->second;
   }
 
 }

@@ -17,5 +17,6 @@
 #define DEG2RAD (PI / 180.f)
 #define RAD2DEG (180.f / PI)
 
+#define MESSAGE_TYPE_PREFIX_LENGTH 2
 
 #endif

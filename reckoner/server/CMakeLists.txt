@@ -13,10 +13,19 @@ set(LIBS ${LIBS} enet)
 file(GLOB ReckonerServer_SOURCES "${ReckonerServer_SOURCE_DIR}/src/*.cpp")
 include_directories("${RECKONER_COMMON_DIR}/src")
 
-add_definitions(-Wall -Wextra -pedantic -Werror)
+set(LIBS ${LIBS} reckoner-common)
 
-add_executable("reckoner-server" ${ReckonerServer_SOURCES})
-target_link_libraries("reckoner-server" ${LIBS})
+find_package(Protobuf REQUIRED)
+include_directories(${PROTOBUF_INCLUDE_DIRS})
+set(LIBS ${LIBS} pthread ${PROTOBUF_LIBRARY})
+include_directories(${CMAKE_BINARY_DIR})
+set_source_files_properties(${PROTO_SRCS} PROPERTIES GENERATED TRUE)
 
-install(TARGETS "reckoner-server" RUNTIME DESTINATION "bin")
+add_definitions(-Wall -Wextra -pedantic)
+
+add_executable(reckoner-server ${ReckonerServer_SOURCES} ${PROTO_SRCS})
+add_dependencies(reckoner-server reckoner-proto)
+target_link_libraries(reckoner-server ${LIBS})
+
+install(TARGETS reckoner-server RUNTIME DESTINATION "bin")
 copy_headers("${ReckonerServer_SOURCE_DIR}/src/" "reckoner/server")

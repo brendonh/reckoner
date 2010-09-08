@@ -2,9 +2,6 @@
 #define __RECKONER__CLIENT_LIST
 
 #include <enet/enet.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <string>
 #include <deque>
 #include <map>
 #include <limits>
@@ -16,17 +13,21 @@
 namespace Reckoner {
 
   typedef std::map<ClientID, Client*> ClientMap;
+  typedef std::map<UserID, Client*> UserMap;
 
   class ClientList {
   public:
 
-    ClientMap clients;
+    ClientMap mClients;
+    UserMap mUsers;
 
     ClientList();
     ~ClientList();
 
     Client* createClient(ENetPeer* p);
     void removeClient(Client* client);
+
+    Client* clientByUser(UserID id);
 
   };
 

@@ -1,27 +1,28 @@
 #ifndef __RECKONER_CLIENT
 #define __RECKONER_CLIENT
 
-#include <enet/enet.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <string>
 
+#include "Reckoner.hpp"
 #include "Server.hpp"
+
+#include "ENetEndpoint.hpp"
 
 namespace Reckoner {
 
-  class Client {
+  class Client : public ENetEndpoint {
   public:
 
-    unsigned long clientID;
-    ENetPeer* peer;
+    ClientID mClientID;
+    UserID mUserID;
+
+    bool mReady;
 
     Client(ClientID id, ENetPeer* p);
     ~Client();
 
     void handle(const ENetEvent* event);
-
-    void log(std::string msg);
+    void handleLogin(const ENetEvent* event);
 
   };
 
