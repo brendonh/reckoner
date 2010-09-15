@@ -13,19 +13,33 @@
 
 namespace Reckoner {
 
-  class ENetEndpoint {
-  public:
+    class ENetEndpoint {
+    public:
+    
+      ENetEndpoint(ENetPeer* peer);
+      ~ENetEndpoint();
+    
+      void startDisconnect();
+      virtual void disconnected();
+      
+      void send(message_type t, google::protobuf::MessageLite* message, enet_uint32 flags);
+      
+    protected:
 
-    void send(message_type t, google::protobuf::MessageLite* message, enet_uint32 flags);
-    bool extractWireBuf(::google::protobuf::MessageLite* pb, const ENetEvent* event);
+      bool extractMessage(google::protobuf::MessageLite& message, const ENetEvent* event);
 
 
-    ENetPeer* mPeer;
-    std::string mIdentifier;
-    int mMessageBufferSize;
-    char* mMessageBuffer;
-
-  };
+      ENetPeer* mPeer;
+      std::string mIdentifier;
+      int mMessageBufferSize;
+      char* mMessageBuffer;
+      
+      bool mDisconnecting;
+      bool mDisconnected;
+      
+      static const uint32_t sDefaultBufferSize = 1024;
+      
+    };
 
 }
 

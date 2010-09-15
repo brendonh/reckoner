@@ -8,15 +8,11 @@ using namespace Reckoner;
 
 extern ClientList* clientList;
 
-Client::Client(ClientID id, ENetPeer* p) {
-  mClientID = id;
-  mPeer = p;
-
-  mUserID = "";
-  mReady = false;
-  
-  mMessageBufferSize = 1024;
-  mMessageBuffer = (char*)malloc(mMessageBufferSize);
+Client::Client(ClientID id, ENetPeer* peer) 
+  : ENetEndpoint(peer),
+    mClientID(id),
+    mUserID("NOUSER"),
+    mReady(false) {
 
   char ip[20];
   enet_address_get_host_ip(&mPeer->address, ip, 20);
@@ -31,11 +27,12 @@ Client::~Client() {
   LOG("Disconnected");
 }
 
+
 void Client::handle(const ENetEvent* event) {
   LOG("Received " << event->packet->dataLength << " bytes");
 
   if (event->packet->dataLength < 2) {
-    LOG("Invalid message length");
+    LOG("Invalid message length " << event->packet->dataLength);
     return;
   }
 
@@ -50,21 +47,12 @@ void Client::handle(const ENetEvent* event) {
       return;
     }
   }
-
-  // std::string msg = std::string((char*)event->packet->data);
-  // std::string response = std::string("Got: ") + msg;
-
-  // ENetPacket *packet = enet_packet_create(response.c_str(), 
-  //                                         response.length() + 1, 
-  //                                         ENET_PACKET_FLAG_RELIABLE);
-
-  // enet_peer_send(peer, 0, packet);
 }
 
 
 void Client::handleLogin(const ENetEvent* event) {
   ProtoBufs::Login login;
-  if (!extractWireBuf(&login, event)) {
+  if (!extractMessage(login, event)) {
     LOG("INVALID LOGIN MESSAGE");
     enet_peer_disconnect(event->peer, NULL);
     return;
@@ -82,7 +70,7 @@ void Client::handleLogin(const ENetEvent* event) {
   LOG("Login: " << name);
   
   ProtoBufs::LoggedIn loggedIn;
-  send(MTYPE_LOGIN, &loggedIn, ENET_PACKET_FLAG_RELIABLE);
+  send(MTYPE_LOGGEDIN, &loggedIn, ENET_PACKET_FLAG_RELIABLE);
 
 }
 

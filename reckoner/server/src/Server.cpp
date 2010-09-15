@@ -108,7 +108,7 @@ int main() {
 
   for(it = clients.begin(); it != clients.end(); ++it) {
     client = it->second;
-    enet_peer_disconnect(client->mPeer, NULL);
+    client->startDisconnect();
     clientList->removeClient(client);
   }
 

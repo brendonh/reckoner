@@ -3,7 +3,7 @@
 #include <string.h>
 #include <signal.h>
 
-#include "Client.hpp"
+#include "Connection.hpp"
 
 using namespace Reckoner::Client;
 
@@ -11,7 +11,7 @@ bool running = true;
 bool _shutdown = false;
 
 void forceShutdown(int UNUSED(param)) {
-  printf("\rForcing shutdown...\n");
+  std::cout << "\rForcing shutdown..." << std::endl;
   running = false;
 }
 
@@ -30,14 +30,14 @@ int main () {
     return EXIT_FAILURE;
   }
 
-  Connection* conn = new Connection();
+  Connection* conn = new Connection("localhost", 8101);
 
-  if (!conn->startConnect("localhost", 8101)) {
+  if (!conn->startConnect()) {
     std::cout << "Abandoning!" << std::endl;
     return EXIT_FAILURE;
   }
 
-  while (running && !conn->mDisconnected) {
+  while (running && !conn->isDisconnected()) {
     if (_shutdown) conn->startDisconnect();
     conn->service(1000);
   }

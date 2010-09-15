@@ -14,23 +14,24 @@ namespace Reckoner {
     class Connection : public ENetEndpoint {
     public:
 
-      Connection();
+      Connection(std::string host, int port);
       ~Connection();
 
-      bool startConnect(std::string h, int p);
-      void service(int timeout);
+      bool startConnect();
+      bool service(int timeout);
 
       void connected();
 
-      void startDisconnect();
-      void disconnected();
+      virtual void disconnected();
 
-      std::string mIdentifier;
+      inline bool isDisconnected() { return mDisconnected; }
+
+      void handle(const ENetEvent* event);
+
       std::string mHost;
       int mPort;
 
-      bool mDisconnecting;
-      bool mDisconnected;
+      bool mReady;
 
       ENetHost* mClient;
       ENetEvent mEvent;
