@@ -4,11 +4,11 @@
 
 #include <vector>
 
-#include <SFML/Window.hpp>
+#include <Box2D/Box2D.h>
 
 #include "./Listeners.hpp"
 
-namespace Microcosm {
+namespace Reckoner {
   namespace Framework {
 
     typedef std::vector<TickListener*> ListenerList;
@@ -16,7 +16,9 @@ namespace Microcosm {
     class WorldObject {
     public:
       
-      WorldObject() {};
+      WorldObject() : mBody(NULL) {};
+
+      void setBody(b2Body* body) { mBody = body; }
 
       void tick() {
         ListenerList::const_iterator i;
@@ -34,6 +36,7 @@ namespace Microcosm {
         }
       };
 
+      b2Body*  mBody;
 
     protected:
 

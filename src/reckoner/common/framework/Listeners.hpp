@@ -4,7 +4,7 @@
 
 #include "./WorldObject.hpp"
 
-namespace Microcosm {
+namespace Reckoner {
   namespace Framework {
 
     class WorldObject;

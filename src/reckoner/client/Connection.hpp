@@ -4,8 +4,8 @@
 
 #include <string>
 
-#include "Reckoner.hpp"
-#include "ENetEndpoint.hpp"
+#include "reckoner/common/Reckoner.hpp"
+#include "reckoner/common/ENetEndpoint.hpp"
 
 
 namespace Reckoner {

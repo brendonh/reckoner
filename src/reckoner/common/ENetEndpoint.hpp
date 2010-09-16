@@ -4,7 +4,7 @@
 
 #include <enet/enet.h>
 
-#include "common/proto/login.pb.h"
+#include "reckoner/proto/login.pb.h"
 
 #include "Reckoner.hpp"
 #include "Messages.hpp"
