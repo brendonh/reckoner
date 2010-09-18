@@ -24,7 +24,7 @@ include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_BINARY_DIR})
 set(LIBS ${LIBS} pthread ${PROTOBUF_LIBRARY})
 
 include_directories(${Reckoner_SOURCE_DIR})
-add_definitions(-Wall -Wextra -pedantic)
+add_definitions(-std=c++0x -Wall -Wextra -pedantic -Winline)
 
 
 add_subdirectory("reckoner/common")

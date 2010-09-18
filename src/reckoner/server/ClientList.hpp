@@ -6,7 +6,7 @@
 #include <map>
 #include <limits>
 
-#include "Server.hpp"
+#include "reckoner/common/ReckonerTypes.hpp"
 #include "Client.hpp"
 
 

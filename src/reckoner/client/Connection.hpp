@@ -11,7 +11,7 @@
 namespace Reckoner {
   namespace Client {
     
-    class Connection : public ENetEndpoint {
+    class Connection : public Reckoner::Network::ENetEndpoint {
     public:
 
       Connection(std::string host, int port);

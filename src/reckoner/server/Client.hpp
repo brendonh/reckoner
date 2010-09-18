@@ -3,14 +3,12 @@
 
 #include <string>
 
-#include "reckoner/common/Reckoner.hpp"
+#include "reckoner/common/ReckonerTypes.hpp"
 #include "reckoner/common/ENetEndpoint.hpp"
-
-#include "Server.hpp"
 
 namespace Reckoner {
   namespace Server {
-    class Client : public ENetEndpoint {
+    class Client : public Reckoner::Network::ENetEndpoint {
     public:
 
       ClientID mClientID;
@@ -21,8 +19,8 @@ namespace Reckoner {
       Client(ClientID id, ENetPeer* p);
       ~Client();
 
-      void handle(const ENetEvent* event);
-      void handleLogin(const ENetEvent* event);
+      //void handle(const ENetEvent& event);
+      //void handleLogin(const ENetEvent* event);
 
     };
   }

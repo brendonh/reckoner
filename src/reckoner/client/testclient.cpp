@@ -21,7 +21,8 @@ void startShutdown(int UNUSED(param)) {
   std::cout << "\r" << std::flush;
 }
 
-int main () {
+
+int main() {
 
   signal(SIGINT, startShutdown);
 

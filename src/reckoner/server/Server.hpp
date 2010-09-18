@@ -3,17 +3,32 @@
 
 #include <string>
 
-#include "reckoner/common/Reckoner.hpp"
-
+#include "reckoner/common/ReckonerTypes.hpp"
+#include "ClientList.hpp"
 
 namespace Reckoner {
   namespace Server {
+
+    bool initialize();
+
+    class Server {
+    public:
+
+      Server();
+      virtual ~Server();
+
+      int run();
+
+      bool _shutdown;
+
+    private:
+      ENetHost* mHost;
+      ClientList mClientList;
+
     typedef unsigned long ClientID;
     typedef std::string UserID;
 
-    void startShutdown();
-
-    int run();
+    };
   }
 }
 

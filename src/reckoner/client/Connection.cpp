@@ -79,11 +79,10 @@ bool Connection::service(int timeout) {
 
 void Connection::connected() {
   LOG("Connected");
-
-  
+ 
   ProtoBufs::Login login;
-  login.set_name("Brend");
-  send(MTYPE_LOGIN, &login, ENET_PACKET_FLAG_RELIABLE);
+  login.set_name("Brendon!!!");
+  send(&login, ENET_PACKET_FLAG_RELIABLE);
 }
 
 
@@ -105,6 +104,9 @@ void Connection::handle(const ENetEvent* event) {
   if (!mReady) {
     if (messageType == MTYPE_LOGGEDIN) {
       LOG("Logged in!");
+
+      
+
       //handleLogin(event);
     } else {
       LOG("Ignoring pre-login message type " << messageType);
