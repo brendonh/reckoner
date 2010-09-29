@@ -25,7 +25,7 @@ namespace Reckoner {
       ClientList();
       ~ClientList();
 
-      Client* createClient(ENetPeer* p);
+      Client* createClient(ENetPeer& p);
       void removeClient(Client* client);
 
       Client* clientByUser(UserID id);

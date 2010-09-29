@@ -7,12 +7,13 @@ using namespace Reckoner::Client;
 
 extern bool _shutdown;
 
-Connection::Connection(std::string host, int port) 
-  : ENetEndpoint(NULL),
-    mHost(host),
+Connection::Connection(std::string hostname, int port, 
+                       ENetHost& client, ENetPeer& peer) 
+  : ENetEndpoint(peer),
+    mHost(hostname),
     mPort(port),
     mReady(false),
-    mClient(NULL) {
+    mClient(client) {
 
   std::ostringstream os;
   os << "[" << mHost << ":" << mPort << "]";
@@ -23,31 +24,32 @@ Connection::Connection(std::string host, int port)
 Connection::~Connection() {}
 
 
-bool Connection::startConnect() {
-  mClient = enet_host_create(NULL, 1, 2, 0, 0);
+Connection* Connection::connect(std::string hostname, int port) {
+  ENetHost* client = enet_host_create(NULL, 1, 2, 0, 0);
 
-  if (mClient == NULL) {
-    LOG("Couldn't create ENet client host.");
-    return false;
+  if (NULL == client) {
+    std::cout << "[CONNECT] Couldn't create ENet client host." << std::endl;
+    return NULL;
   }
 
   ENetAddress address;
-  enet_address_set_host(&address, mHost.c_str());
+  enet_address_set_host(&address, hostname.c_str());
   address.port = 8101;
 
-  mPeer = enet_host_connect(mClient, &address, 2, 0);
+  ENetPeer* peer = enet_host_connect(client, &address, 2, 0);
 
-  if (mPeer == NULL) {
-    LOG("Couldn't connect to server");
-    return false;
+  if (NULL == peer) {
+    std::cout << "CONNECT] Couldn't connect to server" << std::endl;
+    return NULL;
   }
 
-  return true;
+  return new Connection(hostname, port, *client, *peer);
+
 }
 
 
 bool Connection::service(int timeout) {
-  int rv = enet_host_service(mClient, &mEvent, timeout);
+  int rv = enet_host_service(&mClient, &mEvent, timeout);
 
   if (rv == 0) return true;
   
@@ -62,7 +64,7 @@ bool Connection::service(int timeout) {
     break;
 
   case ENET_EVENT_TYPE_RECEIVE:
-    handle(&mEvent);
+    handle(mEvent);
     enet_packet_destroy(mEvent.packet);
     break;
            
@@ -83,34 +85,12 @@ void Connection::connected() {
   ProtoBufs::Login login;
   login.set_name("Brendon!!!");
   send(&login, ENET_PACKET_FLAG_RELIABLE);
+  send(&login, ENET_PACKET_FLAG_RELIABLE);
 }
 
 
 void Connection::disconnected() {
   ENetEndpoint::disconnected();
   LOG("Destroying client");
-  enet_host_destroy(mClient);
-}
-
-
-void Connection::handle(const ENetEvent* event) {
-  if (event->packet->dataLength < 2) {
-    LOG("Invalid message length " << event->packet->dataLength);
-    return;
-  }
-
-  short messageType = (short)(*event->packet->data);
-
-  if (!mReady) {
-    if (messageType == MTYPE_LOGGEDIN) {
-      LOG("Logged in!");
-
-      
-
-      //handleLogin(event);
-    } else {
-      LOG("Ignoring pre-login message type " << messageType);
-      return;
-    }
-  }
+  enet_host_destroy(&mClient);
 }

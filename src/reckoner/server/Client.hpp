@@ -16,7 +16,7 @@ namespace Reckoner {
 
       bool mReady;
 
-      Client(ClientID id, ENetPeer* p);
+      Client(ClientID id, ENetPeer& p);
       ~Client();
 
       //void handle(const ENetEvent& event);

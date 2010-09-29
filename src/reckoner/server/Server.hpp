@@ -4,6 +4,8 @@
 #include <string>
 
 #include "reckoner/common/ReckonerTypes.hpp"
+#include "reckoner/common/Region.hpp"
+
 #include "ClientList.hpp"
 
 namespace Reckoner {
@@ -20,6 +22,7 @@ namespace Reckoner {
       int run();
 
       bool _shutdown;
+      Region mRegion;
 
     private:
       ENetHost* mHost;

@@ -14,10 +14,9 @@ namespace Reckoner {
     class Connection : public Reckoner::Network::ENetEndpoint {
     public:
 
-      Connection(std::string host, int port);
+      Connection(std::string hostname, int port, ENetHost& client, ENetPeer& peer);
       ~Connection();
 
-      bool startConnect();
       bool service(int timeout);
 
       void connected();
@@ -26,15 +25,15 @@ namespace Reckoner {
 
       inline bool isDisconnected() { return mDisconnected; }
 
-      void handle(const ENetEvent* event);
-
       std::string mHost;
       int mPort;
 
       bool mReady;
 
-      ENetHost* mClient;
+      ENetHost& mClient;
       ENetEvent mEvent;
+
+      static Connection* connect(std::string hostname, int port);
 
 
     };

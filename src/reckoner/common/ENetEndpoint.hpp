@@ -18,23 +18,29 @@
 namespace Reckoner {
   namespace Network {
 
-    typedef std::function< void(const google::protobuf::MessageLite& message) > messageCallback_t;
 
     class ENetEndpoint {
     public:
     
-      ENetEndpoint(ENetPeer* peer);
+      typedef std::function< void(ENetEndpoint& endpoint, const google::protobuf::MessageLite& message) > messageCallback_t;
+
+      ENetEndpoint(ENetPeer& peer);
       ~ENetEndpoint();
 
 
       void send(google::protobuf::MessageLite* message, enet_uint32 flags);
       void send(uint32_t messageType, google::protobuf::MessageLite* message, enet_uint32 flags);
 
+      void registerHandler(std::string messageName, 
+                           messageCallback_t handler);
+
       void handle(const ENetEvent& event);
 
-    
       void startDisconnect();
       virtual void disconnected();
+
+      
+      const std::string getIdentifier() { return mIdentifier; }
 
 
       static void mapMessageClass(google::protobuf::MessageLite* message) {
@@ -42,7 +48,8 @@ namespace Reckoner {
         sDispatchMap.push_back(message);
       }
 
-      static void registerHandler(std::string messageName, messageCallback_t handler);
+      static void registerStaticHandler(std::string messageName, 
+                                        messageCallback_t handler);
 
       static void dumpMessageMap();
 
@@ -50,12 +57,11 @@ namespace Reckoner {
       
     protected:
 
-      //google::protobuf::MessageLite* extractMessage(const ENetEvent& event);
-
-      ENetPeer* mPeer;
+      ENetPeer& mPeer;
       std::string mIdentifier;
       int mMessageBufferSize;
       char* mMessageBuffer;
+      std::vector< messageCallback_t > mMessageHandlers;
 
       bool mDisconnecting;
       bool mDisconnected;
@@ -64,8 +70,9 @@ namespace Reckoner {
       static const uint32_t sDefaultBufferSize = 1024;
       static std::vector< google::protobuf::MessageLite* > sDispatchMap;
       static std::unordered_map< std::string, int > sMessageIDMap;
-      static std::vector< messageCallback_t > sMessageHandlers;
-      static void sDefaultMessageHandler(const google::protobuf::MessageLite& message);
+      static std::vector< messageCallback_t > sStaticMessageHandlers;
+      static void sDefaultMessageHandler(ENetEndpoint& endpoint,
+                                         const google::protobuf::MessageLite& message);
       
     };
   }

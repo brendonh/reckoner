@@ -9,16 +9,16 @@ namespace Reckoner{
 
     extern ClientList* clientList;
 
-    Client::Client(ClientID id, ENetPeer* peer) 
+    Client::Client(ClientID id, ENetPeer& peer) 
       : ENetEndpoint(peer),
         mClientID(id),
         mUserID("NOUSER"),
         mReady(false) {
 
       char ip[20];
-      enet_address_get_host_ip(&mPeer->address, ip, 20);
+      enet_address_get_host_ip(&mPeer.address, ip, 20);
       std::ostringstream os;
-      os << "<" << ip << ":" << mPeer->address.port << ">";
+      os << "<" << ip << ":" << mPeer.address.port << ">";
       mIdentifier = os.str();
 
       LOG("Connected");

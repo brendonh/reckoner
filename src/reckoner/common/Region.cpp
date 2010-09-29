@@ -5,9 +5,9 @@
 using namespace Reckoner;
 
 Region::Region() 
-  : mTimeStep(sDefaultTimeStep),
+  : mWorld(b2World(b2Vec2(0.0f, 0.0f), true)),
+    mTimeStep(sDefaultTimeStep),
     mUnrenderedTime(0),
-    mWorld(b2World(b2Vec2(0.0f, 0.0f), true)),
     mObjects(),
     mLastTickTime(0) {
 
@@ -23,10 +23,9 @@ Region::~Region() {
 void Region::tick() {
   mUnrenderedTime += getTimeDelta();
 
-  std::vector<Framework::WorldObject>::iterator i;
-
   while(mUnrenderedTime > mTimeStep) {
-    for (i = mObjects.begin(); i != mObjects.end(); i++) (*i).tick();
+    for (auto i = mObjects.begin(); i != mObjects.end(); i++) 
+      (*i).second.tick();
     mWorld.Step(mTimeStep, 10, 10);
     mUnrenderedTime -= mTimeStep;
   }

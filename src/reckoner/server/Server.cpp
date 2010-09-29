@@ -5,7 +5,6 @@
 
 #include "Server.hpp"
 
-#include "reckoner/common/Region.hpp"
 #include "reckoner/proto/login.pb.h"
 
 #include "ClientList.hpp"
@@ -26,6 +25,7 @@ namespace Reckoner {
 
     Server::Server()
       : _shutdown(false),
+        mRegion(),
         mClientList() {
       ENetAddress address;
 
@@ -47,11 +47,9 @@ namespace Reckoner {
       ENetEvent event;    
       Client *client;
 
-      Reckoner::Region region;
-
       while (!_shutdown) {
 
-        region.tick();
+        mRegion.tick();
 
         int rv = enet_host_service(mHost, &event, 100);
 
@@ -64,10 +62,10 @@ namespace Reckoner {
 
         switch (event.type) {
         case ENET_EVENT_TYPE_CONNECT:
-          client = mClientList.createClient(event.peer);
+          client = mClientList.createClient(*event.peer);
           if (client == NULL) {
             std::cout << "Couldn't create client (out of IDs?)\n" << std::endl;
-            enet_peer_disconnect(event.peer, NULL);
+            enet_peer_disconnect(event.peer, 0);
           }
           // Yes, even if it failed.
           event.peer->data = client;

@@ -4,7 +4,10 @@
 
 #include <string>
 
-typedef unsigned long ClientID;
+typedef unsigned long long uuid_t;
+
+typedef uuid_t ClientID;
 typedef std::string UserID;
+
 
 #endif

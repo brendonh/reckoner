@@ -4,7 +4,7 @@
 
 #include <sys/time.h>
 
-#include <vector>
+#include <unordered_map>
 
 #include <Box2D/Box2D.h>
 
@@ -23,11 +23,13 @@ namespace Reckoner {
 
     void tick();
 
+    b2World mWorld;
+
   private:
     float mTimeStep;
     float mUnrenderedTime;
-    b2World mWorld;
-    std::vector<Framework::WorldObject> mObjects;
+
+    std::unordered_map<uuid_t, Framework::WorldObject> mObjects;
 
     double mLastTickTime;
 

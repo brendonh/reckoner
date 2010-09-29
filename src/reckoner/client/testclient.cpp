@@ -31,9 +31,9 @@ int main() {
     return EXIT_FAILURE;
   }
 
-  Connection* conn = new Connection("localhost", 8101);
+  Connection* conn = Connection::connect("localhost", 8101);
 
-  if (!conn->startConnect()) {
+  if (NULL == conn) {
     std::cout << "Abandoning!" << std::endl;
     return EXIT_FAILURE;
   }

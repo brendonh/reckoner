@@ -14,8 +14,8 @@ ClientList::ClientList() {}
 
 ClientList::~ClientList() {}
 
-Client* ClientList::createClient(ENetPeer* p) {
-  ClientID id = makeClientID(p->address);
+Client* ClientList::createClient(ENetPeer& p) {
+  ClientID id = makeClientID(p.address);
   if (0 == id) return NULL;
   Client* client = new Client(id, p);
   mClients[id] = client;

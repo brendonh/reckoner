@@ -7,6 +7,8 @@
 #include <Box2D/Box2D.h>
 
 #include "./Listeners.hpp"
+#include "reckoner/common/ReckonerTypes.hpp"
+
 
 namespace Reckoner {
   namespace Framework {
@@ -16,9 +18,19 @@ namespace Reckoner {
     class WorldObject {
     public:
       
-      WorldObject() : mBody(NULL) {};
+      WorldObject(uuid_t uuid, 
+                  b2Body& body)
+        : mUUID(uuid), mBody(body) {};
 
-      void setBody(b2Body* body) { mBody = body; }
+      virtual ~WorldObject() {
+        TickListener* tl;
+        while(!mTickListeners.empty()) {
+          tl = mTickListeners.back();
+          mTickListeners.pop_back();
+          delete tl;
+        }
+        mBody.GetWorld()->DestroyBody(&mBody);        
+      };
 
       void tick() {
         ListenerList::const_iterator i;
@@ -27,20 +39,11 @@ namespace Reckoner {
         }
       }
 
-      ~WorldObject() {
-        TickListener* tl;
-        while(!mTickListeners.empty()) {
-          tl = mTickListeners.back();
-          mTickListeners.pop_back();
-          delete tl;
-        }
-      };
-
-      b2Body*  mBody;
-
     protected:
 
+      uuid_t mUUID;
       ListenerList mTickListeners;
+      b2Body&  mBody;
 
     };
 

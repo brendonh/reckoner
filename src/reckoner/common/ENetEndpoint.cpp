@@ -5,16 +5,19 @@
 
 using namespace Reckoner::Network;
 
-ENetEndpoint::ENetEndpoint(ENetPeer* peer) 
+ENetEndpoint::ENetEndpoint(ENetPeer& peer) 
   : mPeer(peer), 
     mIdentifier("[UNKNOWN]"),
     mMessageBufferSize(sDefaultBufferSize),
+    mMessageHandlers(),
     mDisconnecting(false),
     mDisconnected(false) {
 
   if (!sInitialized) initialize();
 
-  mMessageBuffer = (char*)malloc(mMessageBufferSize);
+  peer.data = this;
+
+  mMessageBuffer = static_cast<char*>(malloc(mMessageBufferSize));
 }
 
 ENetEndpoint::~ENetEndpoint() {}
@@ -23,7 +26,7 @@ ENetEndpoint::~ENetEndpoint() {}
 void ENetEndpoint::startDisconnect() {
   LOG("Disconnecting...");
   mDisconnecting = true;
-  enet_peer_disconnect(mPeer, NULL);
+  enet_peer_disconnect(&mPeer, 0);
 }
 
 
@@ -61,11 +64,25 @@ void ENetEndpoint::send(uint32_t messageType,
 
   ENetPacket* packet = enet_packet_create(mMessageBuffer, size, flags);
   
-  enet_peer_send(mPeer, 0, packet);
+  enet_peer_send(&mPeer, 0, packet);
+}
+
+
+void ENetEndpoint::registerHandler(std::string messageName, messageCallback_t handler) {
+  auto it = sMessageIDMap.find(messageName);
+  if (it == sMessageIDMap.end()) {
+    std::cout << "Message name not found: " << messageName << std::endl;
+    return;
+  }
+  uint32_t i = it->second;
+  if (i >= mMessageHandlers.size()) {
+    mMessageHandlers.resize(i+1, NULL);
+  }
+  mMessageHandlers[i] = handler;
 }
 
 void ENetEndpoint::handle(const ENetEvent& event) {
-  LOG("Received " << event.packet->dataLength << " bytes");
+  //LOG("Received " << event.packet->dataLength << " bytes");
   if (event.packet->dataLength < 2) {
     LOG("Invalid message length " << event.packet->dataLength);
     return;
@@ -82,12 +99,21 @@ void ENetEndpoint::handle(const ENetEvent& event) {
     return;
   }
 
-  if (messageType >= sMessageHandlers.size()) {
-    sDefaultMessageHandler(*message);
+  if (messageType < mMessageHandlers.size()) {
+    auto handler = mMessageHandlers[messageType];
+    if (NULL != handler) {
+      handler(*this, *message);
+      return;
+    }
   }
 
-  auto handler = sMessageHandlers[messageType];
-  handler(*message);
+  if (messageType >= sStaticMessageHandlers.size()) {
+    sDefaultMessageHandler(*this, *message);
+    return;
+  }
+
+  auto handler = sStaticMessageHandlers[messageType];
+  handler(*this, *message);
 }
 
 // --------------------------------
@@ -96,7 +122,7 @@ void ENetEndpoint::handle(const ENetEvent& event) {
 
 std::vector< google::protobuf::MessageLite* > ENetEndpoint::sDispatchMap;
 std::unordered_map< std::string, int > ENetEndpoint::sMessageIDMap;
-std::vector< messageCallback_t > ENetEndpoint::sMessageHandlers;
+std::vector< ENetEndpoint::messageCallback_t > ENetEndpoint::sStaticMessageHandlers;
 
 bool ENetEndpoint::sInitialized = false;
 void ENetEndpoint::initialize() {
@@ -115,21 +141,22 @@ void ENetEndpoint::dumpMessageMap() {
 
 
 
-void ENetEndpoint::registerHandler(std::string messageName, messageCallback_t handler) {
+void ENetEndpoint::registerStaticHandler(std::string messageName, messageCallback_t handler) {
   auto it = sMessageIDMap.find(messageName);
   if (it == sMessageIDMap.end()) {
     std::cout << "Message name not found: " << messageName << std::endl;
     return;
   }
   uint32_t i = it->second;
-  if (i >= sMessageHandlers.size()) {
-    sMessageHandlers.resize(i+1, &ENetEndpoint::sDefaultMessageHandler);
+  if (i >= sStaticMessageHandlers.size()) {
+    sStaticMessageHandlers.resize(i+1, &ENetEndpoint::sDefaultMessageHandler);
   }
-  sMessageHandlers[i] = handler;
-  
+  sStaticMessageHandlers[i] = handler;
 }
 
 
-void ENetEndpoint::sDefaultMessageHandler(const google::protobuf::MessageLite& message) {
-  std::cout << "No handler for: " << message.GetTypeName() << std::endl;
+void ENetEndpoint::sDefaultMessageHandler(ENetEndpoint& endpoint,
+                                          const google::protobuf::MessageLite& message) {
+  std::cout << endpoint.getIdentifier() << " No handler for: " 
+            << message.GetTypeName() << std::endl;
 }
