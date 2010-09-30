@@ -19,9 +19,6 @@ namespace Reckoner {
       Client(ClientID id, ENetPeer& p);
       ~Client();
 
-      //void handle(const ENetEvent& event);
-      //void handleLogin(const ENetEvent* event);
-
     };
   }
 }

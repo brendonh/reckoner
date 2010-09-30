@@ -85,7 +85,11 @@ void Connection::connected() {
   ProtoBufs::Login login;
   login.set_name("Brendon!!!");
   send(&login, ENET_PACKET_FLAG_RELIABLE);
-  send(&login, ENET_PACKET_FLAG_RELIABLE);
+
+  ProtoBufs::ControlObject controlObj;
+  controlObj.set_objectid(0);
+  send(&controlObj, ENET_PACKET_FLAG_RELIABLE);
+
 }
 
 

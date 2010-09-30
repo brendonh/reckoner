@@ -37,7 +37,12 @@ void ENetEndpoint::disconnected() {
 
 
 void ENetEndpoint::send(google::protobuf::MessageLite* message, enet_uint32 flags) {
-  uint32_t messageType = sMessageIDMap[message->GetTypeName()];
+  auto it = sMessageIDMap.find(message->GetTypeName());
+  if (it == sMessageIDMap.end()) {
+    LOG("Send: Message name not found: " << message->GetTypeName());
+    return;
+  }
+  uint32_t messageType = it->second;
   send(messageType, message, flags);
 }
 
@@ -71,7 +76,7 @@ void ENetEndpoint::send(uint32_t messageType,
 void ENetEndpoint::registerHandler(std::string messageName, messageCallback_t handler) {
   auto it = sMessageIDMap.find(messageName);
   if (it == sMessageIDMap.end()) {
-    std::cout << "Message name not found: " << messageName << std::endl;
+    LOG("registerHandler: Message name not found: " << messageName);
     return;
   }
   uint32_t i = it->second;
@@ -82,7 +87,7 @@ void ENetEndpoint::registerHandler(std::string messageName, messageCallback_t ha
 }
 
 void ENetEndpoint::handle(const ENetEvent& event) {
-  //LOG("Received " << event.packet->dataLength << " bytes");
+
   if (event.packet->dataLength < 2) {
     LOG("Invalid message length " << event.packet->dataLength);
     return;
@@ -90,9 +95,15 @@ void ENetEndpoint::handle(const ENetEvent& event) {
 
   unsigned short messageType = (short)(*event.packet->data);
 
-  char* data = (char*)event.packet->data + MESSAGE_TYPE_PREFIX_LENGTH;
+  if (messageType >= sDispatchMap.size()) {
+    LOG("handle: Ignoring invalid message type " << messageType);
+    return;
+  }
 
   google::protobuf::MessageLite* message = sDispatchMap[messageType]->New();
+
+  char* data = (char*)event.packet->data + MESSAGE_TYPE_PREFIX_LENGTH;
+
   if (!message->ParseFromArray(data, event.packet->dataLength - MESSAGE_TYPE_PREFIX_LENGTH)) {
     LOG("PARSING FAILED: " << messageType << " :: " << message->GetTypeName());
     delete message;
@@ -128,6 +139,7 @@ bool ENetEndpoint::sInitialized = false;
 void ENetEndpoint::initialize() {
   mapMessageClass(new Reckoner::ProtoBufs::Login());
   mapMessageClass(new Reckoner::ProtoBufs::LoggedIn());
+  mapMessageClass(new Reckoner::ProtoBufs::ControlObject());
   sInitialized = true;
 }
 

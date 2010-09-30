@@ -6,9 +6,10 @@ file(GLOB ReckonerClient_SOURCES "${ReckonerClient_SOURCE_DIR}/*.cpp")
 
 set(LIBS ${LIBS} reckoner-common)
 
-add_executable(reckoner-client ${ReckonerClient_SOURCES})
+add_library(reckoner-client STATIC ${ReckonerClient_SOURCES})
+#add_executable(reckoner-client ${ReckonerClient_SOURCES})
 add_dependencies(reckoner-client reckoner-common)
 target_link_libraries(reckoner-client ${LIBS})
 
-install(TARGETS reckoner-client RUNTIME DESTINATION "bin")
+install(TARGETS reckoner-client ARCHIVE DESTINATION "lib")
 copy_headers("${ReckonerClient_SOURCE_DIR}/" "reckoner/client")

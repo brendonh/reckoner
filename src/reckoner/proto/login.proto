@@ -6,3 +6,7 @@ message Login {
 
 message LoggedIn {
 }
+
+message ControlObject {
+ required uint64 objectID = 1;
+}

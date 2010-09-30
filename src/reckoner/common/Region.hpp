@@ -21,6 +21,8 @@ namespace Reckoner {
     Region();
     ~Region();
 
+    void addObject(Framework::WorldObject* obj);
+
     void tick();
 
     b2World mWorld;
@@ -29,14 +31,14 @@ namespace Reckoner {
     float mTimeStep;
     float mUnrenderedTime;
 
-    std::unordered_map<uuid_t, Framework::WorldObject> mObjects;
+    std::unordered_map<uuid_t, Framework::WorldObject*> mObjects;
 
     double mLastTickTime;
 
     float getTimeDelta() {
       timeval Time = {0, 0};
       gettimeofday(&Time, NULL);
-      double ms = Time.tv_sec + Time.tv_usec / 1000000.;
+      double ms = (Time.tv_sec * 1000) + (Time.tv_usec / 1000000.);
       float diff = ms - mLastTickTime;
       mLastTickTime = ms;
       return diff;

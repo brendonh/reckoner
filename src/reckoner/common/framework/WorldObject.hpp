@@ -2,6 +2,7 @@
 #ifndef __MICROCOSM_FRAMEWORK_WORLDOBJECT
 #define __MICROCOSM_FRAMEWORK_WORLDOBJECT
 
+#include <iostream>
 #include <vector>
 
 #include <Box2D/Box2D.h>
@@ -38,6 +39,8 @@ namespace Reckoner {
           (*i)->tick();
         }
       }
+
+      uuid_t getUUID() { return mUUID; }
 
     protected:
 
