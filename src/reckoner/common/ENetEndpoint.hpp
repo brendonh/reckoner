@@ -8,7 +8,7 @@
 
 #include <enet/enet.h>
 
-#include "reckoner/proto/login.pb.h"
+#include "reckoner/proto/region.pb.h"
 
 #include "Reckoner.hpp"
 #include "Messages.hpp"
@@ -18,18 +18,61 @@
 namespace Reckoner {
   namespace Network {
 
+    namespace MessageMap {
+      extern bool sInitialized;
+      extern std::vector< google::protobuf::MessageLite* > sDispatchMap;
+      extern std::unordered_map< std::string, int > sMessageIDMap;
+
+      void initialize();
+      void mapMessageClass(google::protobuf::MessageLite* message);
+      void dumpMessageMap();
+    }
+
+
+    class ENetPacketBuffer {
+    public:
+      ENetPacketBuffer();
+      ~ENetPacketBuffer();
+
+      bool buffer(google::protobuf::MessageLite* message, 
+                  enet_uint32 flags);
+
+      bool buffer(uint32_t messageType, 
+                  google::protobuf::MessageLite* message, 
+                  enet_uint32 flags);
+      
+      void sendTo(ENetPeer& peer) const;
+
+      int mBufferSize;
+      char* mBuffer;
+      int mMessageSize;
+      enet_uint32 mFlags;
+      
+      static const uint32_t sDefaultBufferSize = 1024;
+
+    };
 
     class ENetEndpoint {
     public:
     
-      typedef std::function< void(ENetEndpoint& endpoint, const google::protobuf::MessageLite& message) > messageCallback_t;
+      typedef std::function< void(ENetEndpoint& endpoint, 
+                                  const google::protobuf::MessageLite& message) 
+                             > messageCallback_t;
 
       ENetEndpoint(ENetPeer& peer);
       ~ENetEndpoint();
 
+      void send(const ENetPacketBuffer& buffer) {
+        buffer.sendTo(mPeer);
+      }
 
-      void send(google::protobuf::MessageLite* message, enet_uint32 flags);
-      void send(uint32_t messageType, google::protobuf::MessageLite* message, enet_uint32 flags);
+      bool send(google::protobuf::MessageLite* message, 
+                enet_uint32 flags);
+
+      bool send(uint32_t messageType, 
+                google::protobuf::MessageLite* message, 
+                enet_uint32 flags);
+
 
       void registerHandler(std::string messageName, 
                            messageCallback_t handler);
@@ -39,42 +82,28 @@ namespace Reckoner {
       void startDisconnect();
       virtual void disconnected();
 
-      
       const std::string getIdentifier() { return mIdentifier; }
-
-
-      static void mapMessageClass(google::protobuf::MessageLite* message) {
-        sMessageIDMap[message->GetTypeName()] = sDispatchMap.size();
-        sDispatchMap.push_back(message);
-      }
 
       static void registerStaticHandler(std::string messageName, 
                                         messageCallback_t handler);
 
-      static void dumpMessageMap();
-
-      static void initialize();
-      
     protected:
 
       ENetPeer& mPeer;
       std::string mIdentifier;
-      int mMessageBufferSize;
-      char* mMessageBuffer;
       std::vector< messageCallback_t > mMessageHandlers;
+
+      ENetPacketBuffer mImmediateBuffer;
 
       bool mDisconnecting;
       bool mDisconnected;
 
-      static bool sInitialized;
-      static const uint32_t sDefaultBufferSize = 1024;
-      static std::vector< google::protobuf::MessageLite* > sDispatchMap;
-      static std::unordered_map< std::string, int > sMessageIDMap;
       static std::vector< messageCallback_t > sStaticMessageHandlers;
       static void sDefaultMessageHandler(ENetEndpoint& endpoint,
                                          const google::protobuf::MessageLite& message);
       
     };
+
   }
 }
 

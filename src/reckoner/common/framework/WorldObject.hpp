@@ -5,11 +5,10 @@
 #include <iostream>
 #include <vector>
 
-#include <Box2D/Box2D.h>
+#include "Listeners.hpp"
+#include "Math2D.hpp"
 
-#include "./Listeners.hpp"
 #include "reckoner/common/ReckonerTypes.hpp"
-
 
 namespace Reckoner {
   namespace Framework {
@@ -19,9 +18,10 @@ namespace Reckoner {
     class WorldObject {
     public:
       
-      WorldObject(uuid_t uuid, 
-                  b2Body& body)
-        : mUUID(uuid), mBody(body) {};
+      PVR mPos;
+
+      WorldObject(uuid_t uuid, PVR pos)
+        : mPos(pos), mUUID(uuid), mTickListeners() {}
 
       virtual ~WorldObject() {
         TickListener* tl;
@@ -30,8 +30,7 @@ namespace Reckoner {
           mTickListeners.pop_back();
           delete tl;
         }
-        mBody.GetWorld()->DestroyBody(&mBody);        
-      };
+      }
 
       void tick() {
         ListenerList::const_iterator i;
@@ -46,7 +45,6 @@ namespace Reckoner {
 
       uuid_t mUUID;
       ListenerList mTickListeners;
-      b2Body&  mBody;
 
     };
 

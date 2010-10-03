@@ -7,6 +7,19 @@ message Login {
 message LoggedIn {
 }
 
+
+message WorldObject {
+  required uint64 objectID  = 1;
+  required float positionX = 2;
+  required float positionY = 3;
+  required float positionZ = 4;
+  required float velocityX = 5;
+  required float velocityY = 6;
+  required float velocityZ = 7;
+  required float rotation  = 8;
+}
+
+
 message ControlObject {
  required uint64 objectID = 1;
 }

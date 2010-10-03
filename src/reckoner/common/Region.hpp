@@ -6,14 +6,13 @@
 
 #include <unordered_map>
 
-#include <Box2D/Box2D.h>
-
+#include "reckoner/common/Reckoner.hpp"
 #include "framework/WorldObject.hpp"
 
 
 namespace Reckoner {
 
-  static const float sDefaultTimeStep = 1.f / 60.f;
+  static const float sDefaultTimeStep = TIMESTEP;
 
   class Region {
   public:
@@ -24,8 +23,6 @@ namespace Reckoner {
     void addObject(Framework::WorldObject* obj);
 
     void tick();
-
-    b2World mWorld;
 
   private:
     float mTimeStep;
@@ -38,7 +35,7 @@ namespace Reckoner {
     float getTimeDelta() {
       timeval Time = {0, 0};
       gettimeofday(&Time, NULL);
-      double ms = (Time.tv_sec * 1000) + (Time.tv_usec / 1000000.);
+      double ms = (Time.tv_sec * 1000) + (Time.tv_usec / 1000.);
       float diff = ms - mLastTickTime;
       mLastTickTime = ms;
       return diff;

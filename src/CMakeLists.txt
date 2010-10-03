@@ -13,10 +13,6 @@ find_package(ENet REQUIRED)
 include_directories(${ENet_INCLUDE_DIR})
 set(LIBS ${LIBS} enet)
 
-find_package(Box2D REQUIRED)
-include_directories(${Box2D_INCLUDE_DIRS})
-set(LIBS ${LIBS} Box2D)
-
 find_package(Protobuf REQUIRED)
 
 add_subdirectory("reckoner/proto")
@@ -24,7 +20,7 @@ include_directories(${PROTOBUF_INCLUDE_DIRS} ${CMAKE_BINARY_DIR})
 set(LIBS ${LIBS} pthread ${PROTOBUF_LIBRARY})
 
 include_directories(${Reckoner_SOURCE_DIR})
-add_definitions(-std=c++0x -Wall -Wextra -pedantic -Winline)
+add_definitions(-std=c++0x -Wall -Wextra -pedantic -Winline -U__SSE__)
 
 
 add_subdirectory("reckoner/common")

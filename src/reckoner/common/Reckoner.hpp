@@ -19,4 +19,6 @@
 
 #define MESSAGE_TYPE_PREFIX_LENGTH 2
 
+#define TIMESTEP (1000.0f / 60.0f)
+
 #endif

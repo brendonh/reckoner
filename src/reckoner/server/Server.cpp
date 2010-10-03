@@ -5,8 +5,6 @@
 
 #include "Server.hpp"
 
-#include "reckoner/proto/login.pb.h"
-
 #include "ClientList.hpp"
 
 namespace Reckoner {
@@ -18,7 +16,7 @@ namespace Reckoner {
         return false;
       }
 
-      Reckoner::Network::ENetEndpoint::initialize();
+      Reckoner::Network::MessageMap::initialize();
 
       return true;
     }

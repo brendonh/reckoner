@@ -8,74 +8,37 @@ using namespace Reckoner::Network;
 ENetEndpoint::ENetEndpoint(ENetPeer& peer) 
   : mPeer(peer), 
     mIdentifier("[UNKNOWN]"),
-    mMessageBufferSize(sDefaultBufferSize),
     mMessageHandlers(),
+    mImmediateBuffer(),
     mDisconnecting(false),
     mDisconnected(false) {
 
-  if (!sInitialized) initialize();
+  if (!MessageMap::sInitialized) MessageMap::initialize();
 
   peer.data = this;
-
-  mMessageBuffer = static_cast<char*>(malloc(mMessageBufferSize));
 }
 
 ENetEndpoint::~ENetEndpoint() {}
 
 
-void ENetEndpoint::startDisconnect() {
-  LOG("Disconnecting...");
-  mDisconnecting = true;
-  enet_peer_disconnect(&mPeer, 0);
+bool ENetEndpoint::send(google::protobuf::MessageLite* message, 
+                        enet_uint32 flags) {
+  if (!mImmediateBuffer.buffer(message, flags)) return false;
+  send(mImmediateBuffer);
+  return true;
 }
 
-
-void ENetEndpoint::disconnected() {
-  LOG("Disconnected.");
-  mDisconnected = true;
-}
-
-
-void ENetEndpoint::send(google::protobuf::MessageLite* message, enet_uint32 flags) {
-  auto it = sMessageIDMap.find(message->GetTypeName());
-  if (it == sMessageIDMap.end()) {
-    LOG("Send: Message name not found: " << message->GetTypeName());
-    return;
-  }
-  uint32_t messageType = it->second;
-  send(messageType, message, flags);
-}
-
-void ENetEndpoint::send(uint32_t messageType, 
+bool ENetEndpoint::send(uint32_t messageType, 
                         google::protobuf::MessageLite* message, 
                         enet_uint32 flags) {
-
-  int size = message->ByteSize() + MESSAGE_TYPE_PREFIX_LENGTH;
-
-  if (size > mMessageBufferSize) {
-    LOG("Reallocating buffer from " << mMessageBufferSize
-        << " to " << size);
-    mMessageBufferSize = size;
-    mMessageBuffer = static_cast<char*>
-      (realloc(mMessageBuffer, mMessageBufferSize));
-  }
-
-  memcpy(mMessageBuffer, &messageType, MESSAGE_TYPE_PREFIX_LENGTH);
-
-  if (!message->SerializeToArray(mMessageBuffer + MESSAGE_TYPE_PREFIX_LENGTH, size)) {
-    LOG("Message serialization failed!");
-    return;
-  }
-
-  ENetPacket* packet = enet_packet_create(mMessageBuffer, size, flags);
-  
-  enet_peer_send(&mPeer, 0, packet);
+  if (!mImmediateBuffer.buffer(messageType, message, flags)) return false;
+  send(mImmediateBuffer);
+  return true;
 }
 
-
 void ENetEndpoint::registerHandler(std::string messageName, messageCallback_t handler) {
-  auto it = sMessageIDMap.find(messageName);
-  if (it == sMessageIDMap.end()) {
+  auto it = MessageMap::sMessageIDMap.find(messageName);
+  if (it == MessageMap::sMessageIDMap.end()) {
     LOG("registerHandler: Message name not found: " << messageName);
     return;
   }
@@ -95,12 +58,12 @@ void ENetEndpoint::handle(const ENetEvent& event) {
 
   unsigned short messageType = (short)(*event.packet->data);
 
-  if (messageType >= sDispatchMap.size()) {
+  if (messageType >= MessageMap::sDispatchMap.size()) {
     LOG("handle: Ignoring invalid message type " << messageType);
     return;
   }
 
-  google::protobuf::MessageLite* message = sDispatchMap[messageType]->New();
+  google::protobuf::MessageLite* message = MessageMap::sDispatchMap[messageType]->New();
 
   char* data = (char*)event.packet->data + MESSAGE_TYPE_PREFIX_LENGTH;
 
@@ -127,35 +90,29 @@ void ENetEndpoint::handle(const ENetEvent& event) {
   handler(*this, *message);
 }
 
+
+void ENetEndpoint::startDisconnect() {
+  LOG("Disconnecting...");
+  mDisconnecting = true;
+  enet_peer_disconnect(&mPeer, 0);
+}
+
+
+void ENetEndpoint::disconnected() {
+  LOG("Disconnected.");
+  mDisconnected = true;
+}
+
+
 // --------------------------------
 // Static
 // --------------------------------
 
-std::vector< google::protobuf::MessageLite* > ENetEndpoint::sDispatchMap;
-std::unordered_map< std::string, int > ENetEndpoint::sMessageIDMap;
 std::vector< ENetEndpoint::messageCallback_t > ENetEndpoint::sStaticMessageHandlers;
 
-bool ENetEndpoint::sInitialized = false;
-void ENetEndpoint::initialize() {
-  mapMessageClass(new Reckoner::ProtoBufs::Login());
-  mapMessageClass(new Reckoner::ProtoBufs::LoggedIn());
-  mapMessageClass(new Reckoner::ProtoBufs::ControlObject());
-  sInitialized = true;
-}
-
-void ENetEndpoint::dumpMessageMap() { 
-  int i=0;
-  for (auto it = sDispatchMap.begin(); it != sDispatchMap.end(); ++it) {
-    std::cout << i << " => " << (*it)->GetTypeName() << std::endl;
-    ++i;
-  }
-}
-
-
-
 void ENetEndpoint::registerStaticHandler(std::string messageName, messageCallback_t handler) {
-  auto it = sMessageIDMap.find(messageName);
-  if (it == sMessageIDMap.end()) {
+  auto it = MessageMap::sMessageIDMap.find(messageName);
+  if (it == MessageMap::sMessageIDMap.end()) {
     std::cout << "Message name not found: " << messageName << std::endl;
     return;
   }
@@ -166,9 +123,95 @@ void ENetEndpoint::registerStaticHandler(std::string messageName, messageCallbac
   sStaticMessageHandlers[i] = handler;
 }
 
-
 void ENetEndpoint::sDefaultMessageHandler(ENetEndpoint& endpoint,
                                           const google::protobuf::MessageLite& message) {
   std::cout << endpoint.getIdentifier() << " No handler for: " 
             << message.GetTypeName() << std::endl;
+}
+
+
+// --------------------------------
+// Message Map
+// --------------------------------
+
+bool MessageMap::sInitialized;
+std::vector< google::protobuf::MessageLite* > MessageMap::sDispatchMap;
+std::unordered_map< std::string, int > MessageMap::sMessageIDMap;
+
+void MessageMap::initialize() {
+  mapMessageClass(new Reckoner::ProtoBufs::Login());
+  mapMessageClass(new Reckoner::ProtoBufs::LoggedIn());
+  mapMessageClass(new Reckoner::ProtoBufs::ControlObject());
+  sInitialized = true;
+}
+
+void MessageMap::mapMessageClass(google::protobuf::MessageLite* message) {
+  sMessageIDMap[message->GetTypeName()] = sDispatchMap.size();
+  sDispatchMap.push_back(message);
+}
+
+void MessageMap::dumpMessageMap() { 
+  int i=0;
+  for (auto it = sDispatchMap.begin(); it != sDispatchMap.end(); ++it) {
+    std::cout << i << " => " << (*it)->GetTypeName() << std::endl;
+    ++i;
+  }
+}
+
+
+// --------------------------------
+// Packet Buffer
+// --------------------------------
+
+ENetPacketBuffer::ENetPacketBuffer()
+  : mBufferSize(sDefaultBufferSize) {
+  mBuffer = static_cast<char*>(malloc(mBufferSize));
+}
+
+bool ENetPacketBuffer::buffer(google::protobuf::MessageLite* message, 
+                              enet_uint32 flags) {
+
+  auto it = MessageMap::sMessageIDMap.find(message->GetTypeName());
+  if (it == MessageMap::sMessageIDMap.end()) {
+    std::cout << "[Buffer]: Message name not found: " << message->GetTypeName() << std::endl;
+    return false;
+  }
+  uint32_t messageType = it->second;
+  return buffer(messageType, message, flags);
+}
+
+ENetPacketBuffer::~ENetPacketBuffer() {
+  delete[] mBuffer;
+}
+
+bool ENetPacketBuffer::buffer(uint32_t messageType, 
+                              google::protobuf::MessageLite* message, 
+                              enet_uint32 flags) {
+
+  mMessageSize = message->ByteSize() + MESSAGE_TYPE_PREFIX_LENGTH;
+
+  if (mMessageSize > mBufferSize) {
+    std::cout << "[Buffer]: Reallocating buffer from " << mBufferSize
+              << " to " << mMessageSize << std::endl;
+    mBufferSize = mMessageSize;
+    mBuffer = static_cast<char*>(realloc(mBuffer, mBufferSize));
+  }
+
+  memcpy(mBuffer, &messageType, MESSAGE_TYPE_PREFIX_LENGTH);
+
+  if (!message->SerializeToArray(mBuffer + MESSAGE_TYPE_PREFIX_LENGTH, 
+                                 mMessageSize)) {
+    std::cout << "[Buffer]: Message serialization failed! " 
+              << message->GetTypeName() << std::endl;
+    return false;
+  }
+
+  mFlags = flags;
+
+  return true;
+}
+
+void ENetPacketBuffer::sendTo(ENetPeer& peer) const {
+  ENetPacket* packet = enet_packet_create(mBuffer, mMessageSize, mFlags);
+  enet_peer_send(&peer, 0, packet);
 }
