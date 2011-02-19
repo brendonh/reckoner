@@ -5,7 +5,7 @@
 
 #include "Server.hpp"
 
-#include "ClientList.hpp"
+#include "UpdateBuilder.hpp"
 
 namespace Reckoner {
   namespace Server {
@@ -24,7 +24,8 @@ namespace Reckoner {
     Server::Server()
       : _shutdown(false),
         mRegion(),
-        mClientList() {
+        mClientList(),
+        mPacketQueue() {
       ENetAddress address;
 
       address.host = ENET_HOST_ANY;
@@ -32,6 +33,13 @@ namespace Reckoner {
 
       mHost = enet_host_create(&address, 32, 2, 0, 0);
     }
+
+
+    Server::~Server() {
+      enet_host_destroy(mHost);
+      //enet_deinitialize();
+    }
+
 
     int Server::run() {
 
@@ -42,71 +50,82 @@ namespace Reckoner {
         return EXIT_FAILURE;
       }
 
-      ENetEvent event;    
-      Client *client;
-
       while (!_shutdown) {
-
+        if (!service(1000)) break;
         mRegion.tick();
-
-        int rv = enet_host_service(mHost, &event, 100);
-
-        if (rv == 0) continue;
-
-        if (rv < 0) {
-          if (!_shutdown) std::cout << "Error listening for events" << std::endl;
-          break;
-        }
-
-        switch (event.type) {
-        case ENET_EVENT_TYPE_CONNECT:
-          client = mClientList.createClient(*event.peer);
-          if (client == NULL) {
-            std::cout << "Couldn't create client (out of IDs?)\n" << std::endl;
-            enet_peer_disconnect(event.peer, 0);
-          }
-          // Yes, even if it failed.
-          event.peer->data = client;
-          break;
-
-        case ENET_EVENT_TYPE_RECEIVE:
-          client = (Client*)event.peer->data;
-          client->handle(event);
-          enet_packet_destroy(event.packet);            
-          break;
-           
-        case ENET_EVENT_TYPE_DISCONNECT:
-          client = (Client*)event.peer->data;
-          if (client == NULL) {
-            std::cout << "Uninitiated client disconnected" << std::endl;
-          } else {
-            mClientList.removeClient(client);
-          }
-          event.peer -> data = NULL;
-          break;
-
-        default: break;
-        }
-
+        flushQueue();
       }
 
-      ClientMap clients = mClientList.mClients;
-      ClientMap::iterator it;
-
-      for(it = clients.begin(); it != clients.end(); ++it) {
-        client = it->second;
-        client->startDisconnect();
-        mClientList.removeClient(client);
-      }
-
+      disconnectAllClients();
       enet_host_flush(mHost);
   
       return 0;
     }
 
-    Server::~Server() {
-      enet_host_destroy(mHost);
-      //enet_deinitialize();
+    bool Server::service(int timeout) {
+      Client *client;
+      ENetEvent event;    
+
+      int rv = enet_host_service(mHost, &event, timeout);
+
+      if (rv == 0) return true;
+
+      if (rv < 0) {
+        if (!_shutdown) std::cout << "Error listening for events" << std::endl;
+        return false;
+      }
+
+      switch (event.type) {
+      case ENET_EVENT_TYPE_CONNECT:
+        client = mClientList.createClient(*event.peer);
+        if (client == NULL) {
+          std::cout << "Couldn't create client (out of IDs?)\n" << std::endl;
+          enet_peer_disconnect(event.peer, 0);
+        }
+        // Yes, even if it failed.
+        event.peer->data = client;
+        break;
+
+      case ENET_EVENT_TYPE_RECEIVE:
+        client = (Client*)event.peer->data;
+        client->handle(event);
+        enet_packet_destroy(event.packet);            
+        break;
+           
+      case ENET_EVENT_TYPE_DISCONNECT:
+        client = (Client*)event.peer->data;
+        if (client == NULL) {
+          std::cout << "Uninitiated client disconnected" << std::endl;
+        } else {
+          mClientList.removeClient(client);
+        }
+        event.peer -> data = NULL;
+        break;
+
+      default: break;
+      }
+
+      return true;
+    }
+
+    void Server::flushQueue() {
+      //mRegion.queuePackets(mPacketQueue);
+      mPacketQueue.sendTo(mClientList);
+    }
+
+    void Server::addObject(Reckoner::Framework::WorldObject& obj) {
+      mRegion.addObject(obj);
+    }
+
+    void Server::disconnectAllClients() {
+      ClientMap clients = mClientList.mClients;
+      ClientMap::iterator it;
+
+      for(it = clients.begin(); it != clients.end(); ++it) {
+        Client* client = it->second;
+        client->startDisconnect();
+        mClientList.removeClient(client);
+      }
     }
 
   }

@@ -29,6 +29,7 @@ namespace Reckoner {
       void removeClient(Client* client);
 
       Client* clientByUser(UserID id);
+      Client* clientByID(ClientID id);
 
     };
   }

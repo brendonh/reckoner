@@ -35,4 +35,8 @@ Client* ClientList::clientByUser(UserID uid) {
   return it->second;
 }
 
-
+Client* ClientList::clientByID(ClientID uid) {
+  ClientMap::const_iterator it = mClients.find(uid);
+  if (it == mClients.end()) return NULL;
+  return it->second;
+}

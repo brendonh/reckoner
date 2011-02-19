@@ -141,6 +141,7 @@ std::unordered_map< std::string, int > MessageMap::sMessageIDMap;
 void MessageMap::initialize() {
   mapMessageClass(new Reckoner::ProtoBufs::Login());
   mapMessageClass(new Reckoner::ProtoBufs::LoggedIn());
+  mapMessageClass(new Reckoner::ProtoBufs::WorldObject());
   mapMessageClass(new Reckoner::ProtoBufs::ControlObject());
   sInitialized = true;
 }

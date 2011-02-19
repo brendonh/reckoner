@@ -9,6 +9,7 @@
 #include <enet/enet.h>
 
 #include "reckoner/proto/region.pb.h"
+#include "reckoner/common/framework/Noncopyable.hpp"
 
 #include "Reckoner.hpp"
 #include "Messages.hpp"
@@ -29,7 +30,7 @@ namespace Reckoner {
     }
 
 
-    class ENetPacketBuffer {
+    class ENetPacketBuffer : public Reckoner::Framework::noncopyable {
     public:
       ENetPacketBuffer();
       ~ENetPacketBuffer();
@@ -51,6 +52,7 @@ namespace Reckoner {
       static const uint32_t sDefaultBufferSize = 1024;
 
     };
+
 
     class ENetEndpoint {
     public:
@@ -86,6 +88,9 @@ namespace Reckoner {
 
       static void registerStaticHandler(std::string messageName, 
                                         messageCallback_t handler);
+
+      // Temporary
+      void* peerData() { return mPeer.data; }
 
     protected:
 

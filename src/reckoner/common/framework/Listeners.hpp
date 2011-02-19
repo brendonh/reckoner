@@ -10,8 +10,11 @@ namespace Reckoner {
     class WorldObject;
 
     class TickListener {
-    public:      
+    public:
+
       virtual void tick() = 0;
+
+      std::string name;
 
     };
 
