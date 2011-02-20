@@ -113,9 +113,20 @@ handle_message(login, Content, #state{userID=none}=State) ->
     {Password} = bson:lookup(password, Doc),
     case {Username, Password} of
         {Un, Pw} when is_binary(Un) andalso is_binary(Pw) ->
-            {ok, UID} = rkgate_login:login(Username, Password),
+            {ok, UserDoc} = rkgate_login:login(Username, Password),
+
+            {{UID}} = bson:lookup('_id', UserDoc),
+
             ?DBG({login, Username, rkgate_util:format_oid(UID)}),
-            {noreply, State#state{userID=UID}};
+            NewState = State#state{userID=UID},
+
+            % XXX TODO: Generalize safety
+            Avatars = [bson:include(['_id', name], A) ||
+                          A <- rkgate_login:get_avatars(UID)],
+            
+            rpc_reply(Doc, [{uid, rkgate_util:format_oid(UID)},
+                            {avatars, Avatars}], NewState),
+            {noreply, NewState};
         _ ->
             {stop, normal, State}
     end;
@@ -126,10 +137,35 @@ handle_message(login, _Content, State) ->
 
 
 %%====================================================================
+%% RPC
+%%====================================================================
+
+flatten_proplist(Proplist) ->
+    list_to_tuple(
+      lists:reverse(
+        lists:foldl(
+          fun({K, V}, Acc) -> [V, K | Acc] end,
+          [], Proplist))).
+                   
+
+rpc_reply(RPCDoc, Reply, State) ->
+    ID = case bson:lookup(rpcid, RPCDoc) of
+             {RPCID} when is_integer(RPCID) -> RPCID;
+             _ -> 0
+         end,
+    ReplyDoc = [{rpcid, ID} | Reply],
+    BSON = bson_binary:put_document(flatten_proplist(ReplyDoc)),
+    Type = 1,
+    Packet = <<Type:2/integer-big-unsigned-unit:8, BSON/binary>>,
+    gen_tcp:send(State#state.socket, Packet).
+    
+
+%%====================================================================
 %% Utility
 %%====================================================================
 
-%% To be improved!
+%% XXX TODO: Not this!
 lookup_type(0) -> login;
+lookup_type(1) -> rpc_reply;
 lookup_type(_) -> unknown.
      

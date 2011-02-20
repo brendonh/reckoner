@@ -13,7 +13,22 @@ main([]) ->
 
     Packet = <<Type:2/integer-big-unsigned-unit:8, BSON/binary>>,
 
-    io:format("Packet: ~p~n", [Packet]),
-
     gen_tcp:send(Socket, Packet),
-    gen_tcp:send(Socket, Packet).
+    
+    flush().
+
+
+
+flush() ->
+	receive 
+        {tcp, _Port, Bin} ->
+            <<Type:2/integer-big-unsigned-unit:8, Content/binary>> = Bin,
+            {Doc, <<>>} = bson_binary:get_document(Content),
+            io:format("Message ~p: ~p~n", [Type, bson:fields(Doc)]);
+		Any ->
+            io:format("Unknown: ~p~n", [Any]),
+			flush()
+	after 
+		2000 ->
+			true
+	end.
