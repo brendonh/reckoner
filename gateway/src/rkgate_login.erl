@@ -9,15 +9,14 @@
 
 -include("rkgate_util.hrl").
 
--export([login/2, get_avatars/1]).
+-export([login/2, get_avatars/1, avatar/2]).
 
 -define(QUERY(T, P), rkgate_mongo:find(T, P)).
 
 login(Username, Password) ->
-    case ?QUERY(reckoner.users, {username, Username}) of
+    case rkgate_mongo:find(reckoner.users, {'_id', Username}) of
         [UserDoc] ->
             {Pass} = bson:lookup(password, UserDoc),
-            ?DBG({checking, Pass, Password}),
             case verify_password(Pass, Password) of
                 true -> 
                     {ok, UserDoc};
@@ -31,9 +30,25 @@ login(Username, Password) ->
             {error, multiple_results}
     end.
 
-get_avatars(UID) ->
-    ?QUERY(reckoner.avatars, {owner, {UID}}).
-
 verify_password(Real, Real) -> true;
 verify_password(_, _) -> false.
-    
+
+get_avatars(UID) ->
+    rkgate_mongo:find(reckoner.avatars, {owner, UID}).
+
+
+avatar(UserID, AvatarID) ->
+    case rkgate_mongo:find(reckoner.avatars, {'_id', AvatarID}) of
+        [AvatarDoc] ->
+            {Owner} = bson:lookup(owner, AvatarDoc),
+            case Owner of
+                UserID ->
+                    {ok, AvatarDoc};
+                Other ->
+                    ?DBG({invalid_avatar, Other}),
+                    {error, not_owner}
+            end;
+        Other ->
+            ?DBG({not_found, Other}),
+            {error, not_found}
+    end.

@@ -20,7 +20,9 @@
 
 -record(state, {
   socket,
-  userID=none
+  userID=none,
+  avatar=none,
+  space=none
 }).
 
 %%====================================================================
@@ -115,24 +117,44 @@ handle_message(login, Content, #state{userID=none}=State) ->
         {Un, Pw} when is_binary(Un) andalso is_binary(Pw) ->
             {ok, UserDoc} = rkgate_login:login(Username, Password),
 
-            {{UID}} = bson:lookup('_id', UserDoc),
+            {UID} = bson:lookup('_id', UserDoc),
 
-            ?DBG({login, Username, rkgate_util:format_oid(UID)}),
+            ?DBG({login, Username}),
             NewState = State#state{userID=UID},
 
             % XXX TODO: Generalize safety
-            Avatars = [bson:include(['_id', name], A) ||
+            Avatars = [bson:include(['_id', name, location], A) ||
                           A <- rkgate_login:get_avatars(UID)],
             
-            rpc_reply(Doc, [{uid, rkgate_util:format_oid(UID)},
-                            {avatars, Avatars}], NewState),
+            rpc_reply(Doc, [{avatars, Avatars}], NewState),
             {noreply, NewState};
         _ ->
             {stop, normal, State}
     end;
 
+handle_message(avatar, Content, #state{avatar=none}=State) ->
+    {Doc, <<>>} = bson_binary:get_document(Content),
+    {AvatarID} = bson:lookup(id, Doc),
+    case AvatarID of
+        X when is_binary(X) ->
+            {ok, AvatarDoc} = rkgate_login:avatar(
+                                State#state.userID, AvatarID),
+            {AID} = bson:lookup('_id', AvatarDoc),
+            ?DBG({avatar, AID}),
+            NewState = State#state{avatar=AID},
+            rpc_reply(Doc, [{success, 1}], NewState),
+            {noreply, NewState};
+        _ ->
+            {stop, normal, State}
+    end;
+            
+
 handle_message(login, _Content, State) ->
     ?DBG(repeated_login_attempt),
+    {noreply, State};
+
+handle_message(avatar, _Content, State) ->
+    ?DBG(repeated_avatar_attempt),
     {noreply, State}.
 
 
@@ -167,5 +189,6 @@ rpc_reply(RPCDoc, Reply, State) ->
 %% XXX TODO: Not this!
 lookup_type(0) -> login;
 lookup_type(1) -> rpc_reply;
+lookup_type(2) -> avatar;
 lookup_type(_) -> unknown.
      
